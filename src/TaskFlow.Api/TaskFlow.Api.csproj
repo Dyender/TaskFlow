@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\TaskFlow.Domain\**\*.cs" Exclude="..\TaskFlow.Domain\bin\**\*;..\TaskFlow.Domain\obj\**\*" LinkBase="TaskFlow.Domain" />
+    <Compile Include="..\TaskFlow.Application\**\*.cs" Exclude="..\TaskFlow.Application\bin\**\*;..\TaskFlow.Application\obj\**\*" LinkBase="TaskFlow.Application" />
+    <Compile Include="..\TaskFlow.Infrastructure\**\*.cs" Exclude="..\TaskFlow.Infrastructure\bin\**\*;..\TaskFlow.Infrastructure\obj\**\*" LinkBase="TaskFlow.Infrastructure" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+  </ItemGroup>
+
+</Project>

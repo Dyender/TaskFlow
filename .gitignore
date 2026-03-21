@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+.idea/
+.vscode/
+.dotnet/
+.docker/
+*.user
+*.suo
+*.db
+taskflow-run.log
+taskflow-run.err.log
+infra-build.log
+infra-restore.log

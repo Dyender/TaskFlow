@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+.dotnet/
+taskflow-run.log
+taskflow-run.err.log
+infra-build.log
+infra-restore.log
