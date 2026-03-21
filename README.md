@@ -46,8 +46,6 @@ Default local connection string:
 Host=localhost;Port=5432;Database=taskflow;Username=taskflow;Password=taskflow
 ```
 
-It is configured in [appsettings.json](c:/Users/dyende/selfProject/csProject/TaskFlow/src/TaskFlow.Api/appsettings.json).
-
 ## Run with Docker Compose
 
 Make sure Docker Desktop is running, then from the project root:
@@ -61,51 +59,11 @@ Services:
 - API: `http://127.0.0.1:5087`
 - PostgreSQL: `localhost:5432`
 
-The compose file is in [docker-compose.yml](c:/Users/dyende/selfProject/csProject/TaskFlow/docker-compose.yml).
-
-## Run against a local PostgreSQL
-
-If PostgreSQL is already installed locally, create a database named `taskflow` and use:
-
-```powershell
-dotnet build TaskFlow.slnx
-dotnet run --project src/TaskFlow.Api/TaskFlow.Api.csproj --no-launch-profile --urls http://127.0.0.1:5087
-```
-
-If you need another connection string:
-
-```powershell
-$env:ConnectionStrings__TaskFlow="Host=localhost;Port=5432;Database=taskflow;Username=taskflow;Password=taskflow"
-dotnet run --project src/TaskFlow.Api/TaskFlow.Api.csproj --no-launch-profile --urls http://127.0.0.1:5087
-```
-
 ## Seed users
 
 - `alice@taskflow.local` / `Passw0rd!`
 - `bob@taskflow.local` / `Passw0rd!`
 - `carol@taskflow.local` / `Passw0rd!`
-
-## EF Core tooling
-
-Local tool manifest is included in [dotnet-tools.json](c:/Users/dyende/selfProject/csProject/TaskFlow/dotnet-tools.json).
-
-Restore the tool:
-
-```powershell
-dotnet tool restore
-```
-
-List migrations:
-
-```powershell
-dotnet tool run dotnet-ef migrations list --project src/TaskFlow.Api/TaskFlow.Api.csproj --startup-project src/TaskFlow.Api/TaskFlow.Api.csproj --context TaskFlowDbContext
-```
-
-Add a new migration:
-
-```powershell
-dotnet tool run dotnet-ef migrations add YourMigrationName --project src/TaskFlow.Api/TaskFlow.Api.csproj --startup-project src/TaskFlow.Api/TaskFlow.Api.csproj --context TaskFlowDbContext --output-dir ..\TaskFlow.Infrastructure\Persistence\Migrations
-```
 
 ## Key API routes
 
@@ -172,11 +130,3 @@ Server events include:
 - `comment.created`
 - `comment.updated`
 - `comment.deleted`
-
-## Next upgrades
-
-- replace custom JWT pipeline with `JwtBearer`
-- add Swagger/OpenAPI package wiring
-- add file attachments
-- add full board/workspace invitation flow
-- add tests
