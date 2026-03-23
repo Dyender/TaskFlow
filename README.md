@@ -15,6 +15,7 @@ The current implementation focuses on a strong backend core:
 - SignalR board events
 - background reminders for upcoming deadlines
 - demo seed data for quick exploration
+- embedded SPA frontend served by `TaskFlow.Api`
 
 ## Tech stack
 
@@ -59,6 +60,8 @@ Services:
 - API: `http://127.0.0.1:5087`
 - PostgreSQL: `localhost:5432`
 
+Open `http://127.0.0.1:5087/` to use the frontend.
+
 ## Seed users
 
 - `alice@taskflow.local` / `Passw0rd!`
@@ -71,6 +74,7 @@ Services:
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
 - `GET /api/users/me`
+- `GET /api/users?search=alice`
 - `PUT /api/users/me`
 - `GET /api/workspaces`
 - `POST /api/workspaces`
@@ -104,6 +108,25 @@ Services:
 - `GET /api/notifications`
 - `PUT /api/notifications/{id}/read`
 - `GET /api/cards/{id}/activity`
+
+## Frontend
+
+The frontend is now embedded into `TaskFlow.Api/wwwroot` and served from the API host root path:
+
+- App shell: `/`
+- Board deep-link: `/board/{id}`
+
+Main supported flows:
+
+- register / login / refresh session
+- create workspaces and boards
+- browse workspace members and boards
+- invite workspace members by searching users
+- manage board settings and board members
+- create, edit, archive, delete, and drag cards between columns
+- create, rename, delete, and reorder columns
+- edit card details, labels, assignee, checklist items, and comments
+- view notifications and card activity
 
 ## Realtime
 

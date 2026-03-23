@@ -8,6 +8,24 @@ public sealed class UserService(
     IPasswordHasher passwordHasher,
     TimeProvider timeProvider) : IUserService
 {
+    public IReadOnlyCollection<UserSummaryResponse> Search(Guid userId, string? search)
+    {
+        _ = repository.GetUserById(userId)
+            ?? throw new NotFoundException("User not found.");
+
+        var query = search?.Trim();
+        return repository.GetUsers()
+            .Where(user =>
+                string.IsNullOrWhiteSpace(query) ||
+                user.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                user.Email.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(user => user.Name)
+            .ThenBy(user => user.Email)
+            .Take(20)
+            .Select(user => user.ToSummary())
+            .ToArray();
+    }
+
     public UserProfileResponse GetProfile(Guid userId)
     {
         var user = repository.GetUserById(userId)

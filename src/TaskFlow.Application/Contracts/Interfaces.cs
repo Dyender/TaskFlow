@@ -101,6 +101,7 @@ public interface IAuthService
 
 public interface IUserService
 {
+    IReadOnlyCollection<UserSummaryResponse> Search(Guid userId, string? search);
     UserProfileResponse GetProfile(Guid userId);
     UserProfileResponse UpdateProfile(Guid userId, UpdateProfileRequest request);
 }

@@ -9,6 +9,10 @@ namespace TaskFlow.Api.Controllers;
 [Route("api/users")]
 public sealed class UsersController(IUserService userService) : ApiControllerBase
 {
+    [HttpGet]
+    public ActionResult<IReadOnlyCollection<UserSummaryResponse>> Search([FromQuery] string? search) =>
+        Ok(userService.Search(CurrentUserId, search));
+
     [HttpGet("me")]
     public ActionResult<UserProfileResponse> GetMe() =>
         Ok(userService.GetProfile(CurrentUserId));
