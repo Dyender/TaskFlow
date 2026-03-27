@@ -81,6 +81,23 @@ window.addEventListener("unhandledrejection", (event) => {
 
 void init();
 
+function getEventElement(event) {
+    const target = event.target;
+    if (target instanceof Element) {
+        return target;
+    }
+
+    if (target instanceof Node) {
+        return target.parentElement;
+    }
+
+    return null;
+}
+
+function closestFromEventTarget(event, selector) {
+    return getEventElement(event)?.closest(selector) ?? null;
+}
+
 async function init() {
     try {
         if (state.session?.accessToken) {
@@ -116,8 +133,12 @@ async function syncRoute(options = {}) {
         return;
     }
 
-    if (state.route.name === "board") {
-        await loadBoard(state.route.boardId, { preserveCard: true });
+    if (isBoardRouteName(state.route.name)) {
+        await loadBoard(state.route.boardId, { preserveCard: state.route.name === "board" });
+        if (state.route.name !== "board") {
+            state.currentCard = null;
+            state.currentActivity = [];
+        }
     } else {
         state.currentBoard = null;
         state.currentCard = null;
@@ -235,15 +256,28 @@ async function navigate(path, options = {}) {
     await syncRoute();
 }
 
+function boardPath(boardId) {
+    return `/board/${boardId}`;
+}
+
+function boardSettingsPath(boardId) {
+    return `/board/${boardId}/settings`;
+}
+
+function isBoardRouteName(name) {
+    return name === "board" || name === "board-settings";
+}
+
 async function handleClick(event) {
-    if (event.target.classList.contains("modal-backdrop")) {
+    const target = getEventElement(event);
+    if (target?.classList.contains("modal-backdrop")) {
         state.currentCard = null;
         state.currentActivity = [];
         render();
         return;
     }
 
-    const actionEl = event.target.closest("[data-action]");
+    const actionEl = closestFromEventTarget(event, "[data-action]");
     if (!actionEl) {
         return;
     }
@@ -282,7 +316,23 @@ async function handleClick(event) {
             await navigate("/");
             return;
         case "open-board":
-            await navigate(`/board/${actionEl.dataset.boardId}`);
+            await navigate(boardPath(actionEl.dataset.boardId));
+            return;
+        case "open-board-settings":
+            if (!state.currentBoard) {
+                return;
+            }
+
+            state.currentCard = null;
+            state.currentActivity = [];
+            await navigate(boardSettingsPath(actionEl.dataset.boardId || state.currentBoard.id));
+            return;
+        case "open-board-main":
+            if (!state.currentBoard) {
+                return;
+            }
+
+            await navigate(boardPath(actionEl.dataset.boardId || state.currentBoard.id));
             return;
         case "open-card":
             await runTask(async () => {
@@ -363,7 +413,7 @@ async function handleClick(event) {
 }
 
 async function handleSubmit(event) {
-    const form = event.target.closest("form[data-form]");
+    const form = closestFromEventTarget(event, "form[data-form]");
     if (!form) {
         return;
     }
@@ -564,8 +614,9 @@ async function handleSubmit(event) {
             }
 
             await runTask(async () => {
+                const cardId = state.currentCard.id;
                 const deadlineValue = String(formData.get("deadlineUtc") || "").trim();
-                await api(`/api/cards/${state.currentCard.id}`, {
+                await api(`/api/cards/${cardId}`, {
                     method: "PUT",
                     body: {
                         title: normalizeNullable(formData.get("title")),
@@ -575,19 +626,22 @@ async function handleSubmit(event) {
                         clearDeadline: !deadlineValue && Boolean(state.currentCard.deadlineUtc)
                     }
                 });
-                await api(`/api/cards/${state.currentCard.id}/assign`, {
+                await api(`/api/cards/${cardId}/assign`, {
                     method: "PUT",
                     body: {
                         assigneeId: normalizeNullable(formData.get("assigneeId"))
                     }
                 });
-                await api(`/api/cards/${state.currentCard.id}/labels`, {
+                await api(`/api/cards/${cardId}/labels`, {
                     method: "PUT",
                     body: {
                         labelIds: formData.getAll("labelId").map(String)
                     }
                 });
-                await refreshBoardAndCard();
+
+                state.currentCard = null;
+                state.currentActivity = [];
+                await loadBoard(state.currentBoard.id, { preserveCard: false, silent: true });
             }, "Card saved.");
             return;
         case "add-check-item":
@@ -624,7 +678,7 @@ async function handleSubmit(event) {
 }
 
 async function handleChange(event) {
-    const toggle = event.target.closest("[data-check-item]");
+    const toggle = closestFromEventTarget(event, "[data-check-item]");
     if (!toggle || !state.currentCard) {
         return;
     }
@@ -641,8 +695,8 @@ async function handleChange(event) {
 }
 
 function handleDragStart(event) {
-    const card = event.target.closest("[data-drag-card]");
-    const column = event.target.closest("[data-drag-column]");
+    const card = closestFromEventTarget(event, "[data-drag-card]");
+    const column = closestFromEventTarget(event, "[data-drag-column]");
 
     if (card && canContributeBoard() && !isBoardFiltered()) {
         dragState = {
@@ -667,7 +721,7 @@ function handleDragStart(event) {
 }
 
 function handleDragOver(event) {
-    const slot = event.target.closest(".drop-slot");
+    const slot = closestFromEventTarget(event, ".drop-slot");
     if (!slot || !dragState || slot.dataset.dropType !== dragState.type) {
         return;
     }
@@ -677,7 +731,7 @@ function handleDragOver(event) {
 }
 
 function handleDragLeave(event) {
-    const slot = event.target.closest(".drop-slot");
+    const slot = closestFromEventTarget(event, ".drop-slot");
     if (!slot) {
         return;
     }
@@ -688,7 +742,7 @@ function handleDragLeave(event) {
 }
 
 async function handleDrop(event) {
-    const slot = event.target.closest(".drop-slot");
+    const slot = closestFromEventTarget(event, ".drop-slot");
     if (!slot || !dragState || slot.dataset.dropType !== dragState.type) {
         return;
     }
@@ -1035,7 +1089,7 @@ function renderRegisterForm() {
 }
 
 function renderShell() {
-    const isBoardRoute = state.route.name === "board";
+    const isBoardRoute = isBoardRouteName(state.route.name);
     return `
         <div class="layout ${isBoardRoute ? "layout--board" : "layout--workspace"}">
             <header class="app-header">
@@ -1062,10 +1116,11 @@ function renderShell() {
             <div class="main-grid ${isBoardRoute ? "main-grid--board" : ""}">
                 ${renderSidebar()}
                 <main class="main-stack ${isBoardRoute ? "main-stack--board" : ""}">
-                    ${state.route.name === "board" ? renderBoardRoute() : renderWorkspacePage()}
+                    ${isBoardRoute ? renderBoardRoute() : renderWorkspacePage()}
                 </main>
             </div>
 
+            ${isBoardRoute ? renderBoardDock() : ""}
             ${renderCardModal()}
         </div>
     `;
@@ -1084,7 +1139,7 @@ function renderSidebar() {
                 <div class="sidebar__list">
                     ${state.workspaces.length
                         ? state.workspaces.map((workspace) => `
-                            <button type="button" class="workspace-link ${workspace.id === state.selectedWorkspaceId && state.route.name !== "board" ? "is-active" : ""}" data-action="select-workspace" data-workspace-id="${escapeAttribute(workspace.id)}">
+                            <button type="button" class="workspace-link ${workspace.id === state.selectedWorkspaceId && !isBoardRouteName(state.route.name) ? "is-active" : ""}" data-action="select-workspace" data-workspace-id="${escapeAttribute(workspace.id)}">
                                 <strong>${escapeHtml(workspace.name)}</strong>
                                 <span>${escapeHtml(workspace.description || "No description")}</span>
                                 <em>${workspace.boardCount} boards</em>
@@ -1270,6 +1325,8 @@ function renderBoardTile(board) {
 }
 
 function renderBoardPage() {
+    return renderBoardRoute();
+
     if (!state.currentBoard) {
         return `
             <section class="surface empty-state">
@@ -1406,8 +1463,37 @@ function renderBoardRoute() {
     const visibleCardCount = visibleColumns.reduce((total, column) => total + getVisibleCards(column).length, 0);
     const boardAccent = normalizeColor(state.currentBoard.color, "#579DFF");
 
+    if (state.route.name === "board-settings" && !canManageBoard()) {
+        return `
+            <div class="board-page board-page--settings" style="--board-accent:${escapeAttribute(boardAccent)};">
+                <section class="surface board-banner">
+                    <div class="board-banner__meta">
+                        <span class="status-pill">${escapeHtml(state.currentWorkspace?.name || "Workspace")}</span>
+                        <span class="status-pill">${escapeHtml(state.currentBoard.visibility)}</span>
+                        <span class="status-pill">${visibleColumns.length} lists</span>
+                        <span class="status-pill">${visibleCardCount} cards</span>
+                    </div>
+                    <div class="board-banner__body">
+                        <div>
+                            <h1 class="board-banner__title">${escapeHtml(state.currentBoard.name)}</h1>
+                            <p class="board-banner__description">${escapeHtml(state.currentBoard.description || "Organize work across lists, cards, checklist items and comments.")}</p>
+                        </div>
+                        <div class="board-banner__actions">
+                            <button type="button" class="button button--ghost button--sm board-banner__button" data-action="open-board-main">Back to board</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="surface empty-state">
+                    <strong>No access to board settings</strong>
+                    <p>Only workspace owners/admins and board admins can update this board.</p>
+                </section>
+            </div>
+        `;
+    }
+
     return `
-        <div class="board-page" style="--board-accent:${escapeAttribute(boardAccent)};">
+        <div class="board-page ${state.route.name === "board-settings" ? "board-page--settings" : "board-page--cards"}" style="--board-accent:${escapeAttribute(boardAccent)};">
             <section class="surface board-banner">
                 <div class="board-banner__meta">
                     <span class="status-pill">${escapeHtml(state.currentWorkspace?.name || "Workspace")}</span>
@@ -1420,6 +1506,7 @@ function renderBoardRoute() {
                         <h1 class="board-banner__title">${escapeHtml(state.currentBoard.name)}</h1>
                         <p class="board-banner__description">${escapeHtml(state.currentBoard.description || "Organize work across lists, cards, checklist items and comments.")}</p>
                     </div>
+                    ${renderBoardBannerAction()}
                 </div>
             </section>
 
@@ -1519,6 +1606,76 @@ function renderBoardRoute() {
                 </div>
             </section>
         </div>
+    `;
+}
+
+function renderBoardBannerAction() {
+    if (state.route.name === "board-settings") {
+        return `
+            <div class="board-banner__actions">
+                <button type="button" class="button button--ghost button--sm board-banner__button" data-action="open-board-main">Back to board</button>
+            </div>
+        `;
+    }
+
+    if (!canManageBoard()) {
+        return "";
+    }
+
+    return `
+        <div class="board-banner__actions">
+            <button type="button" class="button button--ghost button--sm board-banner__button" data-action="open-board-settings">Board settings</button>
+        </div>
+    `;
+}
+
+function renderBoardDock() {
+    if (!state.currentBoard) {
+        return "";
+    }
+
+    const settingsDisabled = !canManageBoard() && state.route.name !== "board-settings";
+    return `
+        <nav class="board-dock" aria-label="Board navigation">
+            ${renderBoardDockItem({
+                label: "Boards",
+                glyph: "workspace",
+                action: "home",
+                active: false
+            })}
+            ${renderBoardDockItem({
+                label: "Board",
+                glyph: "board",
+                action: "open-board-main",
+                active: state.route.name === "board",
+                boardId: state.currentBoard.id
+            })}
+            ${renderBoardDockItem({
+                label: "Settings",
+                glyph: "settings",
+                action: settingsDisabled ? "" : "open-board-settings",
+                active: state.route.name === "board-settings",
+                boardId: state.currentBoard.id,
+                disabled: settingsDisabled
+            })}
+        </nav>
+    `;
+}
+
+function renderBoardDockItem({ label, glyph, action, active, boardId, disabled }) {
+    const actionAttr = action ? `data-action="${escapeAttribute(action)}"` : "";
+    const boardAttr = boardId ? `data-board-id="${escapeAttribute(boardId)}"` : "";
+    return `
+        <button
+            type="button"
+            class="board-dock__item ${active ? "is-active" : ""}"
+            ${actionAttr}
+            ${boardAttr}
+            ${disabled ? "disabled" : ""}
+            aria-current="${active ? "page" : "false"}">
+            <span class="board-dock__glyph board-dock__glyph--${escapeAttribute(glyph)}" aria-hidden="true"></span>
+            <span>${escapeHtml(label)}</span>
+        </button>
     `;
 }
 
@@ -2085,6 +2242,11 @@ function resetWorkspaceState() {
 }
 
 function parseRoute(pathname = window.location.pathname) {
+    const settingsMatch = pathname.match(/^\/board\/([0-9a-f-]{36})\/settings\/?$/i);
+    if (settingsMatch) {
+        return { name: "board-settings", boardId: settingsMatch[1] };
+    }
+
     const match = pathname.match(/^\/board\/([0-9a-f-]{36})\/?$/i);
     return match ? { name: "board", boardId: match[1] } : { name: "home" };
 }
@@ -2240,6 +2402,10 @@ function headerSubtitle() {
 
 function renderHeaderSubtitle() {
     if (state.currentBoard && state.currentWorkspace) {
+        if (state.route.name === "board-settings") {
+            return `${state.currentWorkspace.name} | Board settings`;
+        }
+
         return `${state.currentWorkspace.name} | ${state.currentBoard.visibility}`;
     }
 

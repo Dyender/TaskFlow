@@ -887,12 +887,17 @@ a {
 }
 
 .drop-slot {
-    height: 10px;
     border: 0;
     border-radius: 999px;
     background: transparent;
     opacity: 0;
-    transition: opacity 160ms ease, background-color 160ms ease, transform 160ms ease;
+    transition: opacity 160ms ease, background-color 160ms ease, border-color 160ms ease, height 160ms ease, transform 160ms ease;
+}
+
+.drop-slot--card {
+    width: 100%;
+    height: 12px;
+    border-radius: 16px;
 }
 
 .board-columns.is-dragging-column .drop-slot--column,
@@ -905,6 +910,15 @@ a {
     opacity: 1;
     background: rgba(242, 133, 94, 0.45);
     transform: scaleX(0.98);
+}
+
+.column-list.is-dragging-card .drop-slot--card {
+    height: 56px;
+    border: 2px dashed rgba(21, 122, 110, 0.25);
+}
+
+.drop-slot--card.is-active {
+    border-style: solid;
 }
 
 .drop-slot--column {
@@ -1285,6 +1299,7 @@ body::before {
 
 .main-stack--board {
     gap: 0.85rem;
+    padding-bottom: 5.75rem;
 }
 
 .sidebar,
@@ -1405,6 +1420,15 @@ body::before {
     gap: 0.9rem;
 }
 
+.board-page--cards .board-admin {
+    display: none;
+}
+
+.board-page--settings .board-toolbar,
+.board-page--settings .board-scroll {
+    display: none;
+}
+
 .board-banner {
     position: relative;
     overflow: hidden;
@@ -1444,6 +1468,106 @@ body::before {
     align-items: flex-end;
     justify-content: space-between;
     gap: 1rem;
+}
+
+.board-banner__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.board-banner__button {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    box-shadow: none;
+}
+
+.board-banner__button:hover,
+.board-banner__button:focus-visible {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.board-dock {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    z-index: 24;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem;
+    max-width: calc(100vw - 2rem);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    background: rgba(23, 28, 39, 0.88);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.34);
+    backdrop-filter: blur(18px);
+    transform: translateX(-50%);
+}
+
+.board-dock__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 42px;
+    padding: 0.72rem 0.95rem;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: rgba(241, 245, 255, 0.78);
+    box-shadow: none;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.board-dock__item:hover,
+.board-dock__item:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+.board-dock__item.is-active {
+    color: #ffffff;
+    background: rgba(87, 157, 255, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(151, 190, 255, 0.28);
+}
+
+.board-dock__item[disabled] {
+    color: rgba(241, 245, 255, 0.38);
+    background: transparent;
+}
+
+.board-dock__glyph {
+    width: 0.95rem;
+    height: 0.95rem;
+    display: inline-block;
+    flex: 0 0 0.95rem;
+    color: currentColor;
+}
+
+.board-dock__glyph--workspace {
+    background:
+        linear-gradient(currentColor 0 0) 0 0 / 42% 42% no-repeat,
+        linear-gradient(currentColor 0 0) 100% 0 / 42% 42% no-repeat,
+        linear-gradient(currentColor 0 0) 0 100% / 42% 42% no-repeat,
+        linear-gradient(currentColor 0 0) 100% 100% / 42% 42% no-repeat;
+}
+
+.board-dock__glyph--board {
+    background:
+        linear-gradient(90deg, currentColor 0 26%, transparent 26% 37%, currentColor 37% 63%, transparent 63% 74%, currentColor 74% 100%);
+}
+
+.board-dock__glyph--settings {
+    background:
+        radial-gradient(circle, currentColor 0 2px, transparent 2.5px) 24% 18% / 4px 4px no-repeat,
+        radial-gradient(circle, currentColor 0 2px, transparent 2.5px) 74% 50% / 4px 4px no-repeat,
+        radial-gradient(circle, currentColor 0 2px, transparent 2.5px) 42% 82% / 4px 4px no-repeat,
+        linear-gradient(currentColor 0 0) center 18% / 100% 2px no-repeat,
+        linear-gradient(currentColor 0 0) center 50% / 100% 2px no-repeat,
+        linear-gradient(currentColor 0 0) center 82% / 100% 2px no-repeat;
 }
 
 .board-banner__title {
@@ -1610,8 +1734,16 @@ body::before {
     background: rgba(12, 102, 228, 0.18);
 }
 
+.column-list.is-dragging-card .drop-slot--card {
+    border-color: rgba(12, 102, 228, 0.35);
+}
+
 .drop-slot.is-active {
     background: rgba(12, 102, 228, 0.34);
+}
+
+.drop-slot--card.is-active {
+    border-color: rgba(12, 102, 228, 0.62);
 }
 
 .drawer,
@@ -1669,6 +1801,30 @@ body::before {
     .field-inline,
     .filter-bar {
         grid-template-columns: 1fr;
+    }
+
+    .board-banner__body {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .board-banner__actions,
+    .board-banner__button {
+        width: 100%;
+    }
+
+    .board-dock {
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: 0.75rem;
+        width: auto;
+        max-width: none;
+        transform: none;
+    }
+
+    .board-dock__item {
+        flex: 1 1 0;
+        padding-inline: 0.7rem;
     }
 
     .toolbar {
